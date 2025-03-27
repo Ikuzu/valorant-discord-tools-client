@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits, REST, Routes, Interaction } from 'discord.js'
 import dotenv from 'dotenv'
-import { handleStartCommand } from './commands/start'
+import { handleStartCommand } from './commands/start.js'
 
 dotenv.config()
 

@@ -2,16 +2,14 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Run Voicebot (ts-node)",
-      "type": "shell",
-      "command": "ts-node",
-      "args": ["src/index.ts"],
+      "label": "Build Bot",
+      "type": "npm",
+      "script": "build",
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": [],
-      "detail": "Run Valorant VoiceBot using ts-node"
+      "problemMatcher": ["$tsc"]
     }
   ]
 }

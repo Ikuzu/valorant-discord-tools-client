@@ -1,18 +1,40 @@
 import axios from 'axios'
 import fs from 'fs'
 
-export async function synthVoice(text: string, path: string = './voice.wav') {
-  const speaker = process.env.VOICEVOX_SPEAKER || '1'
+const VOICEVOX_API_URL = 'http://127.0.0.1:50021'
+const VOICEVOX_SPEAKER = 47
 
-  const query = await axios.post('http://localhost:50021/audio_query', null, {
-    params: { text, speaker }
-  })
+export async function synthVoice(text: string, outPath = './voice.wav'): Promise<string | null> {
+  try {
+    console.log('Requesting VOICEVOX synthesis...', { text })
 
-  const res = await axios.post('http://localhost:50021/synthesis', query.data, {
-    params: { speaker },
-    responseType: 'arraybuffer'
-  })
+    const queryRes = await axios.post(
+      `${VOICEVOX_API_URL}/audio_query`,
+      {},
+      {
+        params: { text, speaker: VOICEVOX_SPEAKER },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      }
+    )
 
-  fs.writeFileSync(path, res.data)
-  return path
+    if (queryRes.status !== 200) {
+      console.error(`audio_query failed: ${queryRes.status} ${queryRes.statusText}`)
+      return null
+    }
+
+    const synthRes = await axios.post(`${VOICEVOX_API_URL}/synthesis`, queryRes.data, {
+      params: { speaker: VOICEVOX_SPEAKER },
+      headers: {
+        Accept: 'audio/wav',
+        'Content-Type': 'application/json'
+      },
+      responseType: 'arraybuffer'
+    })
+
+    fs.writeFileSync(outPath, synthRes.data)
+    return outPath
+  } catch (err) {
+    console.error('VOICEVOX error:', err)
+    return null
+  }
 }

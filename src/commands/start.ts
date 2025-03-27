@@ -1,5 +1,5 @@
 import { ChatInputCommandInteraction, ChannelType } from 'discord.js'
-import { startVoiceReadLoop } from '../voiceReader'
+import { startVoiceReadLoop } from '../voiceReader.js'
 
 export async function handleStartCommand(interaction: ChatInputCommandInteraction) {
   const input = interaction.options.getString('channel', true)

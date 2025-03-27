@@ -3,10 +3,12 @@ import {
   joinVoiceChannel,
   createAudioPlayer,
   createAudioResource,
-  AudioPlayerStatus
+  AudioPlayerStatus,
+  entersState,
+  VoiceConnectionStatus
 } from '@discordjs/voice'
-import { fetchChatMessages } from './riotClient'
-import { synthVoice } from './voicevox'
+import { fetchChatMessages } from './riotClient.js'
+import { synthVoice } from './voicevox.js'
 
 export async function startVoiceReadLoop(vc: VoiceChannel) {
   const connection = joinVoiceChannel({
@@ -15,21 +17,43 @@ export async function startVoiceReadLoop(vc: VoiceChannel) {
     adapterCreator: vc.guild.voiceAdapterCreator
   })
 
+  // 接続安定化のため、ステート確認
+  try {
+    await entersState(connection, VoiceConnectionStatus.Ready, 5_000)
+    console.log(`[VC] Connected to "${vc.name}"`)
+  } catch {
+    console.error(`[VC] Failed to connect to "${vc.name}"`)
+    connection.destroy()
+    return
+  }
+
   const player = createAudioPlayer()
   connection.subscribe(player)
 
-  setInterval(async () => {
-    const newMessages = await fetchChatMessages()
-    for (const msg of newMessages) {
-      const text = `${msg.sender}が言いました。${msg.content}`
-      console.log('[VOICE] 読み上げ:', text)
-      const filePath = await synthVoice(text)
-      const resource = createAudioResource(filePath)
-      player.play(resource)
+  const pollInterval = 2000
 
-      await new Promise((resolve) => {
-        player.once(AudioPlayerStatus.Idle, resolve)
-      })
+  const loop = async () => {
+    try {
+      const newMessages = await fetchChatMessages()
+      for (const msg of newMessages) {
+        const text = `${msg.sender} said: ${msg.content}`
+        console.log('[VOICE]', text)
+
+        const filePath = await synthVoice(text)
+        if (!filePath) {
+          console.warn('[VOICE] Failed to synthesize:', text)
+          continue
+        }
+        const resource = createAudioResource(filePath)
+        player.play(resource)
+
+        await entersState(player, AudioPlayerStatus.Idle, 30_000)
+      }
+    } catch (err) {
+      console.error('[VOICE LOOP ERROR]', err)
     }
-  }, 2000)
+  }
+
+  // 定期実行
+  setInterval(loop, pollInterval)
 }
