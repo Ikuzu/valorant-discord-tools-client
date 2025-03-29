@@ -2,6 +2,12 @@
   "name": "valorant-discord-bot",
   "version": "1.0.0",
   "type": "module",
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "assets": [
+      "dist/**/*"
+    ]
+  },
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/index.js",
@@ -9,15 +15,17 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.18.0",
     "axios": "^1.7.7",
     "discord.js": "^14.16.2",
     "dotenv": "^16.4.5",
+    "ffmpeg-static": "^5.2.0",
     "pg": "^8.13.0"
   },
   "devDependencies": {
+    "@types/node-fetch": "^2.6.12",
     "@types/pg": "^8.11.10",
-    "@types/puppeteer": "^7.0.4",
     "@typescript-eslint/eslint-plugin": "^8.7.0",
     "@typescript-eslint/parser": "^8.7.0",
     "eslint": "^9.11.1",

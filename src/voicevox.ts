@@ -1,10 +1,14 @@
 import axios from 'axios'
 import fs from 'fs'
+import { VoicevoxSpeaker } from './types/voicevox.js'
 
 const VOICEVOX_API_URL = 'http://127.0.0.1:50021'
-const VOICEVOX_SPEAKER = 47
 
-export async function synthVoice(text: string, outPath = './voice.wav'): Promise<string | null> {
+export async function synthVoice(
+  text: string,
+  speakerId = 0,
+  outPath = './voice.wav'
+): Promise<string | null> {
   try {
     console.log('Requesting VOICEVOX synthesis...', { text })
 
@@ -12,7 +16,7 @@ export async function synthVoice(text: string, outPath = './voice.wav'): Promise
       `${VOICEVOX_API_URL}/audio_query`,
       {},
       {
-        params: { text, speaker: VOICEVOX_SPEAKER },
+        params: { text, speaker: speakerId },
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       }
     )
@@ -23,7 +27,7 @@ export async function synthVoice(text: string, outPath = './voice.wav'): Promise
     }
 
     const synthRes = await axios.post(`${VOICEVOX_API_URL}/synthesis`, queryRes.data, {
-      params: { speaker: VOICEVOX_SPEAKER },
+      params: { speaker: speakerId },
       headers: {
         Accept: 'audio/wav',
         'Content-Type': 'application/json'
@@ -37,4 +41,9 @@ export async function synthVoice(text: string, outPath = './voice.wav'): Promise
     console.error('VOICEVOX error:', err)
     return null
   }
+}
+
+export async function fetchVoicevoxSpeakers(): Promise<VoicevoxSpeaker[]> {
+  const res = await fetch('http://localhost:50021/speakers')
+  return await res.json()
 }

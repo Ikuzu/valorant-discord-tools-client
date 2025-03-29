@@ -1,5 +1,7 @@
+// handler.ts
 import { ChatInputCommandInteraction, ChannelType } from 'discord.js'
-import { startVoiceReadLoop } from '../voiceReader.js'
+import { startVoiceReadLoop } from '../voiceReader.js' // 音声合成とVC処理
+import { RiotManager } from '../riot/riotManager.js' // RiotManagerのインポート
 
 export async function handleStartCommand(interaction: ChatInputCommandInteraction) {
   const input = interaction.options.getString('channel', true)
@@ -20,5 +22,10 @@ export async function handleStartCommand(interaction: ChatInputCommandInteractio
   }
 
   await interaction.reply(`Joined voice channel "${channel.name}" and started reading chat.`)
-  await startVoiceReadLoop(channel)
+  const riotManager = new RiotManager()
+  await riotManager.start() // RiotManagerを開始
+  const xmppMitm = await riotManager.getXmppMitm()
+  if (xmppMitm) {
+    await startVoiceReadLoop(channel, xmppMitm)
+  }
 }

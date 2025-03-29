@@ -4,14 +4,11 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug Valorant Voicebot",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/src/index.ts",
-      "runtimeArgs": ["--loader", "ts-node/esm"],
+      "name": "Start Bot (npm start)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
       "envFile": "${workspaceFolder}/.env",
-      "env": {
-        "NODE_ENV": "development"
-      }
+      "console": "integratedTerminal"
     }
   ]
 }
