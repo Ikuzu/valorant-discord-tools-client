@@ -1,11 +1,8 @@
-// eslint.config.js
-
 import { FlatCompat } from '@eslint/eslintrc'
 import tsParser from '@typescript-eslint/parser'
 import tsPlugin from '@typescript-eslint/eslint-plugin'
 import securityPlugin from 'eslint-plugin-security'
 
-// FlatCompatを使って従来の設定からの移行を容易にします
 const compat = new FlatCompat()
 
 export default [
