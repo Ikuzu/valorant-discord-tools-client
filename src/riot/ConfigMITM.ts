@@ -1,5 +1,4 @@
 import * as http from 'node:http'
-import { HeadersInit } from 'undici'
 
 interface PlayerConfigAffinities {
   'chat.affinities': {

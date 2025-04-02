@@ -15,9 +15,12 @@ console.log('OAuth user ID:', discordUserId)
 
 let guilds: { guildId: string; guildName: string }[]
 try {
-  const response = await axios.get('http://localhost:3000/user-guild', {
-    params: { discordUserId }
-  })
+  const response = await axios.get(
+    'https://valorant-discord-tools-server-production.up.railway.app/user-guild',
+    {
+      params: { discordUserId }
+    }
+  )
   guilds = response.data
 } catch (error) {
   console.error('Failed to fetch guilds')
@@ -48,5 +51,5 @@ console.log('Selected guild:', selectedGuild.guildName)
 await riotManager.start()
 const xmppMitm = await riotManager.getXmppMitm()
 if (xmppMitm) {
-  await startLogReadLoop(selectedGuild.guildId,discordUserId, xmppMitm)
+  await startLogReadLoop(selectedGuild.guildId, discordUserId, xmppMitm)
 }
