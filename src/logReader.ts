@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { XmppMITM } from './riot/XmppMITM.js'
 
-export async function startLogReadLoop(userId: string, xmppMitm: XmppMITM) {
+export async function startLogReadLoop(discordUserId: string, guildId: string, xmppMitm: XmppMITM) {
   const pollInterval = 2000
   const seenMessageIds = new Set<string>()
   const startTime = new Date()
@@ -38,7 +38,8 @@ export async function startLogReadLoop(userId: string, xmppMitm: XmppMITM) {
 
         const postData = {
           messageId,
-          discordUserId: userId,
+          guildId: guildId,
+          discordUserId: discordUserId,
           room: '',
           from,
           to,
