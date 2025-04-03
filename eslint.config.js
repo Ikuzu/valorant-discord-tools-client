@@ -1,45 +1,50 @@
-import { FlatCompat } from '@eslint/eslintrc'
-import tsParser from '@typescript-eslint/parser'
-import tsPlugin from '@typescript-eslint/eslint-plugin'
-import securityPlugin from 'eslint-plugin-security'
+import js from '@eslint/js'
+import vue from 'eslint-plugin-vue'
+import tseslint from '@typescript-eslint/eslint-plugin'
+import tsparser from '@typescript-eslint/parser'
+import prettier from 'eslint-plugin-prettier'
 
-const compat = new FlatCompat()
-
+/** @type {import("eslint").Linter.FlatConfig[]} */
 export default [
+  js.configs.recommended,
   {
-    files: ['*.ts', '*.tsx'], // TypeScriptファイルに適用
+    files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
-      parser: tsParser, // TypeScript用のパーサ
+      parser: tsparser,
       parserOptions: {
-        project: './tsconfig.json' // tsconfig.json を参照
-      }
+        project: './tsconfig.json',
+        tsconfigRootDir: process.cwd(),
+      },
     },
     plugins: {
-      '@typescript-eslint': tsPlugin, // TypeScriptのルールを使用
-      security: securityPlugin // セキュリティに関するルールを使用
+      '@typescript-eslint': tseslint,
     },
     rules: {
-      // TypeScript用のルール設定
-      ...tsPlugin.configs.recommended.rules,
-      // セキュリティルール
-      'security/detect-object-injection': 'warn',
-      'security/detect-possible-timing-attacks': 'warn',
-      'security/detect-non-literal-fs-filename': 'warn',
-      // その他のルール
-      'no-console': 'warn',
-      'no-unused-vars': 'warn'
-    }
+      ...tseslint.configs.recommended.rules,
+    },
   },
   {
-    files: ['*.js', '*.jsx'], // JavaScriptファイルに適用
+    files: ['**/*.vue'],
     languageOptions: {
-      ecmaVersion: 'latest', // ECMAScriptのバージョン
-      sourceType: 'module' // モジュールを使用
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: 'module',
+        extraFileExtensions: ['.vue'],
+      },
     },
+    plugins: {
+      vue,
+    },
+    processor: vue.processors.defineTemplateBodyVisitor,
     rules: {
-      'no-console': 'warn',
-      'no-unused-vars': 'warn'
-    }
+      ...vue.configs['vue3-recommended'].rules,
+    },
   },
-  ...compat.extends('prettier')
+  {
+    plugins: { prettier },
+    rules: {
+      'prettier/prettier': 'error',
+    },
+  },
 ]

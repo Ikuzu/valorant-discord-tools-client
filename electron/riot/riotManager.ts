@@ -1,7 +1,5 @@
-// RiotManager.ts
 import { XmppMITM } from './XmppMITM.js'
 import { ConfigMITM } from './ConfigMITM.js'
-import * as fs from 'node:fs'
 import { getRiotClientPath } from './riotClientUtils.js'
 import { exec } from 'node:child_process'
 
@@ -11,7 +9,6 @@ export class RiotManager {
   private httpPort = 35479
   private xmppPort = 35478
   private host = '127.0.0.1'
-  private logStream = fs.createWriteStream('./logs.txt')
 
   constructor() {
     this.configMitm = new ConfigMITM(this.httpPort, this.host, this.xmppPort)
@@ -20,7 +17,7 @@ export class RiotManager {
 
   async start() {
     await this.configMitm.start()
-    this.xmppMitm = new XmppMITM(this.xmppPort, this.host, this.configMitm, this.logStream)
+    this.xmppMitm = new XmppMITM(this.xmppPort, this.host, this.configMitm)
     console.log('ConfigMITM started')
 
     // XmppMITMの開始
