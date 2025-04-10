@@ -86,16 +86,20 @@ async function isRiotOrValorantRunning(): Promise<boolean> {
 async function killRiotAndValorant() {
   return new Promise<void>((resolve) => {
     let doneCount = 0
-    const onFinish = () => {
+    const onFinish = (err: Error | null) => {
+      if (err) {
+        console.warn('[kill] エラー:', err.message)
+      }
       doneCount++
       if (doneCount >= 2) {
         resolve()
       }
     }
+
     // Riot Client
-    exec('taskkill /F /IM RiotClientServices.exe', () => onFinish())
+    exec('taskkill /F /IM RiotClientServices.exe', onFinish)
     // Valorant
-    exec('taskkill /F /IM VALORANT-Win64-Shipping.exe', () => onFinish())
+    exec('taskkill /F /IM VALORANT-Win64-Shipping.exe', onFinish)
   })
 }
 
