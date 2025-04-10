@@ -2,6 +2,7 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 export default defineConfig({
   main: {
@@ -9,17 +10,31 @@ export default defineConfig({
       outDir: 'dist/main',
       sourcemap: true,
       lib: {
-        entry: path.join(__dirname, 'electron/main.ts'),
+        entry: path.join(__dirname, 'src/electron/main.ts'),
       },
     },
-    plugins: [externalizeDepsPlugin()],
+    plugins: [
+      externalizeDepsPlugin(),
+      viteStaticCopy({
+        targets: [
+          {
+            src: 'src/electron/riot/certs',
+            dest: '.',
+          },
+          {
+            src: 'src/electron/.env',
+            dest: '.',
+          },
+        ],
+      }),
+    ],
   },
   preload: {
     build: {
       outDir: 'dist/preload',
       sourcemap: true,
       lib: {
-        entry: path.join(__dirname, 'electron/preload.ts'),
+        entry: path.join(__dirname, 'src/electron/preload.ts'),
         formats: ['cjs'],
       },
     },

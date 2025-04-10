@@ -1,29 +1,30 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'path'
 import { config } from 'dotenv'
+import { expand } from 'dotenv-expand'
 import {
   registerCustomProtocol,
   handleSecondInstance,
   handleInitialProtocolLaunch,
   setMainWindow,
   setCodeVerifier,
-} from './protocol'
-import { startDiscordOAuthWithPKCE } from './oauth-pkce'
-import { RiotManager } from './riot/riotManager'
-import { startLogReadLoop } from './logReader'
+} from './core/protocol'
+import { startDiscordOAuthWithPKCE } from './oauth/pkce'
+import { RiotMitmService } from './riot/riot-mitm-service'
 import { exec } from 'child_process'
 
 // .env 読み込み
-config({ path: path.join(__dirname, '../.env') })
+config({ path: path.join(__dirname, '.env') })
+expand(config())
 
 // 開発モード判定
 const isDev = process.env.NODE_ENV === 'development'
 
 // ビルド済み Renderer のパス
 const RENDERER_DIST = path.join(__dirname, '../renderer')
-const riotManager = new RiotManager()
+const riotMitmService = new RiotMitmService()
 
-// カスタムプロトコル（valorantDiscordTools://...）登録
+// カスタムプロトコル登録
 registerCustomProtocol()
 
 // 多重起動を防ぐ
@@ -64,7 +65,7 @@ if (!gotLock) {
 // ---- ここから下は IPC ハンドラなど ----
 
 // サーバーURL（ギルド一覧取得用）
-const GUILD_API_URL = 'https://valorant-discord-tools-server-production.up.railway.app/user-guild'
+const GUILD_API_URL = `${process.env.API_BASE_URL}/user-guild`
 
 // Riot/Valorant が起動しているかを tasklist で判定
 async function isRiotOrValorantRunning(): Promise<boolean> {
@@ -121,35 +122,28 @@ ipcMain.handle('start-discord-oauth', async (_event) => {
 ipcMain.handle('start-valorant', async (_event, { guildId, discordUserId }) => {
   console.log('start-valorant called with:', guildId, discordUserId)
 
-  // 1) すでに Riot/Valorant が起動中か確認
+  // Riot/Valorant が起動中か確認
   const running = await isRiotOrValorantRunning()
   if (running) {
-    // 2) ダイアログで確認
+    // 起動中であればダイアログで確認
     const result = dialog.showMessageBoxSync({
       type: 'question',
       title: 'Riot/Valorantが起動中です',
       message: 'Riot Client または Valorant がすでに起動しています。終了しますか？',
       buttons: ['OK', 'キャンセル'],
-      cancelId: 1, // "キャンセル"が押されたら1
-      defaultId: 0, // デフォルトは OK
+      cancelId: 1,
+      defaultId: 0,
     })
-    // OK が押されたら result = 0
     if (result === 0) {
-      // 3) 強制終了
       await killRiotAndValorant()
     } else {
-      // キャンセルされた場合は何もしないでリターン
       return { success: false, error: 'User canceled' }
     }
   }
 
   try {
-    // 4) ここで改めて Valorant を MITM 付きで起動
-    await riotManager.start()
-    const xmppMitm = riotManager.getXmppMitm()
-    if (xmppMitm) {
-      await startLogReadLoop(guildId, discordUserId, xmppMitm)
-    }
+    // Valorant を MITM 付きで起動
+    await riotMitmService.start(guildId, discordUserId)
     return { success: true }
   } catch (err) {
     console.error('start-valorant error:', err)

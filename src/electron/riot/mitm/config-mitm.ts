@@ -47,7 +47,7 @@ export class ConfigMITM {
 
       const response = await fetch(`https://clientconfig.rpg.riotgames.com${req.url}`, {
         method: req.method,
-        headers: proxiedHeaders
+        headers: proxiedHeaders,
       })
       const text = await response.text()
 
@@ -64,7 +64,7 @@ export class ConfigMITM {
               const newMapping = {
                 localHost: `127.0.0.${++this._affinityMappingID}`,
                 riotHost: ip as string,
-                riotPort: data['chat.port']
+                riotPort: data['chat.port'],
               }
               this.affinityMappings.push(newMapping)
               data['chat.affinities'][region] = newMapping.localHost
@@ -80,7 +80,7 @@ export class ConfigMITM {
       }
       res.end()
     })
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       this._server?.listen(this._port, this._host, () => {
         resolve()
       })
@@ -88,7 +88,7 @@ export class ConfigMITM {
   }
 
   async stop() {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       this._server?.close(() => {
         resolve()
       })

@@ -4,7 +4,6 @@ import open from 'open'
 import axios from 'axios'
 
 // .env や main.ts 側で読み込んでいる前提
-const REDIRECT_URI = 'valorantDiscordTools://callback'
 
 function generateCodeVerifier(): string {
   return base64URLEncode(crypto.randomBytes(32))
@@ -26,8 +25,8 @@ export async function startDiscordOAuthWithPKCE() {
 
   // 2) Discord 認証URL
   const authUrl = new URL('https://discord.com/oauth2/authorize')
-  authUrl.searchParams.set('client_id', process.env.OAUTH_CLIENT_ID!)
-  authUrl.searchParams.set('redirect_uri', REDIRECT_URI)
+  authUrl.searchParams.set('client_id', process.env.OAUTH_CLIENT_ID)
+  authUrl.searchParams.set('redirect_uri', process.env.OAUTH_REDIRECT_URI)
   authUrl.searchParams.set('response_type', 'code')
   authUrl.searchParams.set('scope', 'identify')
   authUrl.searchParams.set('code_challenge', codeChallenge)
@@ -44,7 +43,7 @@ export async function exchangeCodeForToken(code: string, codeVerifier: string): 
     client_id: process.env.OAUTH_CLIENT_ID!,
     grant_type: 'authorization_code',
     code,
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: process.env.OAUTH_REDIRECT_URI,
     code_verifier: codeVerifier,
   })
 

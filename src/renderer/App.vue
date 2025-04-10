@@ -128,8 +128,8 @@ onMounted(() => {
   mq.addEventListener('change', handler)
 
   // OAuthイベント受信
-  window.electron.receive('oauth-success', handleOAuthSuccess)
-  window.electron.receive('oauth-failed', handleOAuthFailed)
+  window.electron.on('oauth-success', handleOAuthSuccess)
+  window.electron.on('oauth-failed', handleOAuthFailed)
 
   onUnmounted(() => {
     mq.removeEventListener('change', handler)

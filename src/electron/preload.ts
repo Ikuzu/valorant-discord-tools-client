@@ -2,7 +2,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electron', {
-  receive(channel: string, callback: (...args: any[]) => void) {
+  on(channel: string, callback: (...args: any[]) => void) {
     ipcRenderer.on(channel, (_event, ...args) => callback(...args))
   },
   send: (channel: string, ...args: any[]) => {

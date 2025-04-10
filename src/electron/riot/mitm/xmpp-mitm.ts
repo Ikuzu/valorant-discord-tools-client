@@ -1,30 +1,28 @@
 import * as tls from 'node:tls'
-import { ConfigMITM } from './ConfigMITM.js'
+import { ConfigMITM } from './config-mitm'
 import * as fs from 'node:fs'
 import path from 'path'
+import { EventEmitter } from 'node:events'
 
-export class XmppMITM {
+export class XmppMITM extends EventEmitter {
   private readonly _port: number
-  private readonly _host: string
   private readonly _configMitm: ConfigMITM
-  public messages: string[]
   private _socketID = 0
 
-  constructor(port: number, host: string, configMitm: ConfigMITM) {
+  constructor(port: number, configMitm: ConfigMITM) {
+    super()
     this._port = port
-    this._host = host
     this._configMitm = configMitm
-    this.messages = []
   }
 
   async start() {
-    console.log(await fs.promises.readFile(path.join(__dirname, '../certs/server.key')))
+    console.log(await fs.promises.readFile(path.join(__dirname, 'certs/server.key')))
     return new Promise<void>(async (resolve) => {
       tls
         .createServer(
           {
-            key: await fs.promises.readFile(path.join(__dirname, '../certs/server.key')),
-            cert: await fs.promises.readFile(path.join(__dirname, '../certs/server.cert')),
+            key: await fs.promises.readFile(path.join(__dirname, 'certs/server.key')),
+            cert: await fs.promises.readFile(path.join(__dirname, 'certs/server.cert')),
             rejectUnauthorized: false,
             requestCert: false,
           },
@@ -40,20 +38,8 @@ export class XmppMITM {
             }
 
             this._socketID++
-            const currentSocketID = this._socketID
 
             console.log(`Connecting to ${mapping.riotHost}:${mapping.riotPort}...`)
-            /*
-            this._logStream.write(
-              JSON.stringify({
-                type: 'open-valorant',
-                time: Date.now(),
-                host: mapping.riotHost,
-                port: mapping.riotPort,
-                socketID: currentSocketID
-              }) + '\n'
-               
-            )*/
 
             let preConnectBuffer = Buffer.alloc(0)
 
@@ -69,42 +55,17 @@ export class XmppMITM {
                   riotTLS.write(preConnectBuffer)
                   preConnectBuffer = Buffer.alloc(0)
                 }
-                /*
-                this._logStream.write(
-                  JSON.stringify({
-                    type: 'open-riot',
-                    time: Date.now(),
-                    socketID: currentSocketID
-                  }) + '\n'
-                )
-                  */
               }
             )
 
             riotTLS.on('data', (data) => {
-              this.messages.push(data.toString())
-              /*
-              this._logStream.write(
-                JSON.stringify({
-                  type: 'incoming',
-                  time: Date.now(),
-                  data: data.toString(),
-                }) + '\n'
-              )
-                */
+              const message = data.toString()
+              this.emit('message', message)
               socket.write(data)
             })
 
             riotTLS.on('close', () => {
-              /*
-              this._logStream.write(
-                JSON.stringify({
-                  type: 'close-riot',
-                  time: Date.now(),
-                  socketID: currentSocketID,
-                }) + '\n'
-              )
-                */
+              console.log('riotTLS closed')
             })
 
             riotTLS.on('error', (error) => {
@@ -112,15 +73,6 @@ export class XmppMITM {
             })
 
             socket.on('data', (data) => {
-              /*
-              this._logStream.write(
-                JSON.stringify({
-                  type: 'outgoing',
-                  time: Date.now(),
-                  data: data.toString(),
-                }) + '\n'
-              )
-                */
               if (riotTLS.connecting) {
                 preConnectBuffer = Buffer.concat([preConnectBuffer, data])
               } else {
@@ -129,15 +81,6 @@ export class XmppMITM {
             })
 
             socket.on('close', () => {
-              /*
-              this._logStream.write(
-                JSON.stringify({
-                  type: 'close-valorant',
-                  time: Date.now(),
-                  socketID: currentSocketID,
-                }) + '\n'
-              )
-                */
               console.log(`Disconnected from ${mapping.riotHost}:${mapping.riotPort}`)
             })
 
