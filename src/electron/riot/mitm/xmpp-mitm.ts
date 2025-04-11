@@ -72,6 +72,14 @@ export class XmppMITM extends EventEmitter {
               console.error('Riot TLS error:', error)
             })
 
+            socket.on('connect', () => {
+              this.emit('connected')
+            })
+
+            socket.on('close', () => {
+              this.emit('disconnected')
+            })
+
             socket.on('data', (data) => {
               if (riotTLS.connecting) {
                 preConnectBuffer = Buffer.concat([preConnectBuffer, data])
@@ -86,6 +94,7 @@ export class XmppMITM extends EventEmitter {
 
             socket.on('error', (error) => {
               console.error('Valorant TLS error:', error)
+              this.emit('error')
             })
           }
         )

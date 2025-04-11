@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
+import { fileURLToPath } from 'url'
 
 export default defineConfig({
   main: {
@@ -42,6 +43,11 @@ export default defineConfig({
   },
   renderer: {
     root: '.',
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src/renderer', import.meta.url)),
+      },
+    },
     build: {
       outDir: 'dist/renderer',
       rollupOptions: {

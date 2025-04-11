@@ -7,16 +7,16 @@ import {
   handleSecondInstance,
   handleInitialProtocolLaunch,
   setMainWindow,
-  setCodeVerifier,
 } from './core/protocol'
-import { startDiscordOAuthWithPKCE } from './oauth/pkce'
+import { startDiscordOAuthWithPKCE } from './discord/oauth/pkce'
 import { RiotMitmService } from './riot/riot-mitm-service'
 import { exec } from 'child_process'
+import { setCodeVerifier, tryAutoLogin } from './discord/oauth/oauth-service'
 
 // .env 読み込み
-config({ path: path.join(__dirname, '.env') })
-expand(config())
-
+const env = config({ path: path.join(__dirname, '.env') })
+expand(env)
+let win: BrowserWindow | null = null
 // 開発モード判定
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -33,7 +33,7 @@ if (!gotLock) {
   app.quit()
 } else {
   app.whenReady().then(async () => {
-    const win = new BrowserWindow({
+    win = new BrowserWindow({
       webPreferences: {
         preload: path.join(__dirname, '../preload/preload.cjs'),
       },
@@ -52,17 +52,11 @@ if (!gotLock) {
 
     // 起動時のカスタムスキームURI処理（初回起動分）
     handleInitialProtocolLaunch()
-
-    // アプリ起動と同時に PKCE OAuth を開始 → codeVerifier を保持
-    const codeVerifier = await startDiscordOAuthWithPKCE()
-    setCodeVerifier(codeVerifier)
   })
 
   // second-instance は protocol.ts 側で一元管理
   handleSecondInstance()
 }
-
-// ---- ここから下は IPC ハンドラなど ----
 
 // サーバーURL（ギルド一覧取得用）
 const GUILD_API_URL = `${process.env.API_BASE_URL}/user-guild`
@@ -118,9 +112,19 @@ ipcMain.handle('fetch-guilds', async (_event, { discordUserId }) => {
 })
 
 ipcMain.handle('start-discord-oauth', async (_event) => {
-  const codeVerifier = await startDiscordOAuthWithPKCE()
-  setCodeVerifier(codeVerifier)
-  return { success: true }
+  if (win) {
+    if (!(await tryAutoLogin(win))) {
+      // PKCE OAuth を開始 → 非同期で実行
+      void (async () => {
+        const codeVerifier = await startDiscordOAuthWithPKCE()
+        setCodeVerifier(codeVerifier)
+      })()
+
+      return { status: 'browser-oauth' }
+    }
+    return { status: 'auto-login' }
+  }
+  return { status: 'no-window' }
 })
 
 ipcMain.handle('start-valorant', async (_event, { guildId, discordUserId }) => {
@@ -141,16 +145,16 @@ ipcMain.handle('start-valorant', async (_event, { guildId, discordUserId }) => {
     if (result === 0) {
       await killRiotAndValorant()
     } else {
-      return { success: false, error: 'User canceled' }
+      return { status: 'failed' }
     }
   }
 
   try {
     // Valorant を MITM 付きで起動
     await riotMitmService.start(guildId, discordUserId)
-    return { success: true }
+    return { status: 'started' }
   } catch (err) {
     console.error('start-valorant error:', err)
-    return { success: false, error: err }
+    return { status: 'failed' }
   }
 })

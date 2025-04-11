@@ -1,16 +1,11 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'path'
-import { oauthHandler } from '../oauth/oauth-service'
+import { oauthHandler } from '../discord/oauth/oauth-service'
 
 let mainWindow: BrowserWindow | null = null
-let codeVerifier: string | null = null // PKCE用
 
 export function setMainWindow(win: BrowserWindow) {
   mainWindow = win
-}
-
-export function setCodeVerifier(verifier: string) {
-  codeVerifier = verifier
 }
 
 /** URIスキームを OS に登録 */

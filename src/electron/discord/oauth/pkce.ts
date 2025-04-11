@@ -1,9 +1,6 @@
-// electron/oauth-pkce.ts
 import crypto from 'crypto'
 import open from 'open'
 import axios from 'axios'
-
-// .env や main.ts 側で読み込んでいる前提
 
 function generateCodeVerifier(): string {
   return base64URLEncode(crypto.randomBytes(32))
@@ -38,7 +35,7 @@ export async function startDiscordOAuthWithPKCE() {
   return codeVerifier
 }
 
-export async function exchangeCodeForToken(code: string, codeVerifier: string): Promise<string> {
+export async function exchangeCodeForToken(code: string, codeVerifier: string) {
   const body = new URLSearchParams({
     client_id: process.env.OAUTH_CLIENT_ID!,
     grant_type: 'authorization_code',
@@ -50,7 +47,12 @@ export async function exchangeCodeForToken(code: string, codeVerifier: string): 
   const res = await axios.post('https://discord.com/api/oauth2/token', body.toString(), {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
   })
-  return res.data.access_token
+
+  return {
+    accessToken: res.data.access_token,
+    refreshToken: res.data.refresh_token,
+    expiresAt: Date.now() + res.data.expires_in * 1000,
+  }
 }
 
 // ユーザー情報の型(必要な要素だけ)

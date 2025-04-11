@@ -3,6 +3,7 @@ import { ConfigMITM } from './mitm/config-mitm.js'
 import { getRiotClientPath } from './utils/riot-client-utils.js'
 import { exec } from 'node:child_process'
 import axios from 'axios'
+import { BrowserWindow } from 'electron'
 
 export class RiotMitmService {
   private xmppMitm: XmppMITM | null
@@ -20,6 +21,20 @@ export class RiotMitmService {
     await this.configMitm.start()
     this.xmppMitm = new XmppMITM(this.xmppPort, this.configMitm)
     console.log('ConfigMITM started')
+
+    this.notifyStatus('connecting')
+
+    this.xmppMitm.on('connected', () => {
+      this.notifyStatus('connected')
+    })
+
+    this.xmppMitm.on('disconnected', () => {
+      this.notifyStatus('disconnected')
+    })
+
+    this.xmppMitm.on('error', () => {
+      this.notifyStatus('error')
+    })
 
     // XmppMITMの開始
     await this.xmppMitm.start()
@@ -50,5 +65,10 @@ export class RiotMitmService {
         postData
       )
     })
+  }
+
+  private notifyStatus(status: 'connecting' | 'connected' | 'disconnected' | 'error') {
+    const win = BrowserWindow.getAllWindows()[0]
+    win.webContents.send('mitm-status', status)
   }
 }
