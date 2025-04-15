@@ -1,17 +1,32 @@
 <template>
-  <div
-    class="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100"
-  >
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md space-y-6">
-      <h1 class="text-xl font-bold text-center">Valorant Discord Tools</h1>
+  <div class="text-white relative overflow-hidden">
+    <!-- 本体 -->
+    <div class="relative z-10 flex flex-col items-start px-6 py-10 max-w-4xl mx-auto space-y-8">
+      <div class="text-3xl font-bold flex items-center gap-3">
+        <img src="../../assets/images/discord-logo.svg" class="w-8 h-8" />
+        Discord Bot
+      </div>
+
+      <!-- ステータス系 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+        <div>
+          <label class="block mb-1 text-sm text-gray-400">MITM 状態</label>
+          <p class="text-cyan-400 font-semibold">{{ mitmStatusDisplay }}</p>
+        </div>
+
+        <div>
+          <label class="block mb-1 text-sm text-gray-400">Server 状態</label>
+          <p class="text-green-400 font-semibold">{{ serverStatus }}</p>
+        </div>
+      </div>
 
       <!-- ギルド選択 -->
-      <div>
-        <label class="block mb-1 text-sm text-gray-700 dark:text-gray-300">Guild</label>
+      <div class="w-full">
+        <label class="block mb-1 text-sm text-gray-400">Guild 選択</label>
         <Listbox v-model="selectedGuildId">
           <div class="relative">
             <ListboxButton
-              class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-left text-sm"
+              class="w-full bg-gray-800 border border-gray-600 rounded px-4 py-2 text-left"
             >
               {{ guildNameFromId(selectedGuildId) || 'ギルドを選択' }}
             </ListboxButton>
@@ -23,12 +38,14 @@
               leave-from-class="transform scale-100 opacity-100"
               leave-to-class="transform scale-95 opacity-0"
             >
-              <ListboxOptions class="absolute w-full bg-white dark:bg-gray-700 border rounded mt-1">
+              <ListboxOptions
+                class="absolute mt-1 max-h-60 w-full overflow-auto rounded bg-gray-800 border border-gray-600"
+              >
                 <ListboxOption
                   v-for="g in guilds"
                   :key="g.guildId"
                   :value="g.guildId"
-                  class="cursor-pointer px-3 py-2 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm text-gray-700 dark:text-gray-300"
+                  class="cursor-pointer px-4 py-2 hover:bg-gray-700"
                 >
                   {{ g.guildName }}
                 </ListboxOption>
@@ -38,33 +55,13 @@
         </Listbox>
       </div>
 
-      <!-- MITM状態 -->
-      <p class="text-sm text-gray-700 dark:text-gray-300">
-        MITM状態：
-        <span :class="colorClass(mitmStatus)">{{ mitmStatus || '未接続' }}</span>
-      </p>
-
-      <!-- サーバー状態 -->
-      <p class="text-sm text-gray-700 dark:text-gray-300">
-        Server状態：
-        <span :class="serverStatus === 'online' ? 'text-green-500' : 'text-red-500'">{{
-          serverStatus
-        }}</span>
-      </p>
-
-      <!-- Start ボタン -->
+      <!-- Start ボタン（右下常設でもOK）-->
       <button
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:bg-gray-400 text-sm font-semibold"
-        :disabled="!canStart"
+        class="mt-6 px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full text-white font-semibold shadow-lg hover:brightness-110"
         @click="handleStart"
       >
-        Start
+        <PowerIcon class="w-5 h-5 inline-block mr-1" /> 起動
       </button>
-
-      <!-- メッセージ -->
-      <p v-if="message" class="text-sm text-center text-blue-500 dark:text-blue-400">
-        {{ message }}
-      </p>
     </div>
   </div>
 </template>
@@ -72,66 +69,33 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue'
-import { useAuthStore } from '@/store/auth'
+import Header from '@/components/layout/header.vue'
+import { PowerIcon } from '@heroicons/vue/20/solid'
 
 const selectedGuildId = ref('')
 const guilds = ref<{ guildId: string; guildName: string }[]>([])
-const mitmStatus = ref<'connecting' | 'connected' | 'disconnected' | 'error' | ''>('')
+const mitmStatus = ref<'online' | 'offline' | ''>('offline')
 const serverStatus = ref<'online' | 'offline'>('offline')
-const message = ref('')
-const auth = useAuthStore()
 
-const canStart = computed(() => !!auth.userId && !!selectedGuildId.value)
+const mitmStatusDisplay = computed(() => {
+  return mitmStatus.value === 'online' ? 'Online' : 'Offline'
+})
 
 const guildNameFromId = (id: string) => guilds.value.find((g) => g.guildId === id)?.guildName
 
-const handleStart = async () => {
-  if (!auth.userId || !selectedGuildId.value) return
-  message.value = 'Starting...'
-  const result = await window.electron.invoke('start-valorant', {
-    discordUserId: auth.userId,
-    guildId: selectedGuildId.value,
-  })
-  message.value =
-    result?.status === 'started' ? 'RiotManager を起動しました。' : '起動に失敗しました。'
-}
-
-const colorClass = (status: string) => {
-  switch (status) {
-    case 'connected':
-      return 'text-green-500'
-    case 'connecting':
-      return 'text-yellow-500'
-    case 'disconnected':
-    case 'error':
-      return 'text-red-500'
-    default:
-      return 'text-gray-500'
-  }
+const handleStart = () => {
+  // Start MITM処理
+  console.log('Start button clicked')
 }
 
 onMounted(() => {
-  fetchGuilds()
-
-  // MITM状態受信
-  window.electron.on('mitm-status', (status) => {
-    mitmStatus.value = status
-  })
-
-  // サーバー状態取得（定期pingとかでも良い）
-  setInterval(async () => {
-    try {
-      await window.electron.invoke('check-server-health')
-      serverStatus.value = 'online'
-    } catch {
-      serverStatus.value = 'offline'
-    }
-  }, 5000)
+  guilds.value = [
+    { guildId: '123', guildName: 'Test Guild 1' },
+    { guildId: '456', guildName: 'Test Guild 2' },
+  ]
 })
-
-async function fetchGuilds() {
-  if (!auth.userId) return
-  const result = await window.electron.invoke('fetch-guilds', { discordUserId: auth.userId })
-  guilds.value = result
-}
 </script>
+
+<style scoped>
+/* アイコンライブラリが必要ならここで指定可能 */
+</style>

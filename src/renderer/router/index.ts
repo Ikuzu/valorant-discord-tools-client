@@ -6,12 +6,12 @@ import Main from '@/components/views/home.vue'
 
 const routes = [
   {
-    path: '/',
+    path: '/l',
     name: 'Login',
     component: Login,
   },
   {
-    path: '/main',
+    path: '/',
     name: 'Main',
     component: Layout, // Layoutで包む
     children: [
