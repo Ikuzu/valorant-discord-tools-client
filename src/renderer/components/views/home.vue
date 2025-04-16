@@ -52,7 +52,7 @@
           <span
             :class="[
               'w-3 h-3 rounded-full',
-              serverStatus === 'online' ? 'bg-green-400' : 'bg-gray-500',
+              serverStatus === 'Online' ? 'bg-green-400' : 'bg-gray-500',
             ]"
           />
           <span>Server Status: {{ serverStatus }}</span>
@@ -74,9 +74,10 @@
             ]"
           >
             {{
-              guildNameFromId(selectedGuildId) || isGuildListAvailable
+              guildNameFromId ??
+              (isGuildListAvailable
                 ? 'サーバーを選択してください。'
-                : '有効なサーバーがありません。'
+                : '有効なサーバーがありません。')
             }}
           </ListboxButton>
 
@@ -91,30 +92,59 @@
                 leave-from-class="transform scale-100 opacity-100"
                 leave-to-class="transform scale-95 opacity-0"
               >
-                <ListboxOptions
-                  v-if="open && isGuildListAvailable"
-                  class="max-h-60 w-full overflow-auto bg-white/10 text-white border border-white/20 rounded-md shadow-lg backdrop-blur-md"
-                >
-                  <ListboxOption
-                    v-for="g in guilds"
-                    :key="g.guildId"
-                    :value="g.guildId"
-                    class="cursor-pointer px-4 py-2 hover:bg-white/20"
+                <div ref="dropdownRef">
+                  <ListboxOptions
+                    v-if="open && isGuildListAvailable"
+                    class="max-h-60 w-full overflow-auto bg-white/10 text-white border border-white/20 rounded-md shadow-lg backdrop-blur-md"
                   >
-                    {{ g.guildName }}
-                  </ListboxOption>
-                </ListboxOptions>
+                    <ListboxOption
+                      v-for="g in guilds"
+                      :key="g.guildId"
+                      :value="g.guildId"
+                      class="cursor-pointer px-4 py-2 hover:bg-white/20"
+                    >
+                      {{ g.guildName }}
+                    </ListboxOption>
+                  </ListboxOptions>
+                </div>
               </Transition>
             </div>
           </Teleport>
         </div>
       </Listbox>
+
+      <div v-if="voiceChannels.length > 0" class="mt-4">
+        <label class="block text-sm text-gray-400 mb-1">ボイスチャンネル</label>
+        <Listbox v-model="selectedChannelId">
+          <div class="relative">
+            <ListboxButton
+              class="w-full px-4 py-2 text-left rounded-md border bg-white/10 border-white/20 text-white"
+            >
+              {{
+                voiceChannels.find((c) => c.id === selectedChannelId)?.name || 'チャンネルを選択'
+              }}
+            </ListboxButton>
+            <ListboxOptions
+              class="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white/10 text-white border border-white/20 shadow-lg backdrop-blur-md z-50"
+            >
+              <ListboxOption
+                v-for="channel in voiceChannels"
+                :key="channel.id"
+                :value="channel.id"
+                class="cursor-pointer px-4 py-2 hover:bg-white/20"
+              >
+                {{ channel.name }}
+              </ListboxOption>
+            </ListboxOptions>
+          </div>
+        </Listbox>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, useTemplateRef, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, nextTick, useTemplateRef, onBeforeUnmount, watch } from 'vue'
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue'
 import { PlayIcon } from '@heroicons/vue/20/solid'
 import valorantBackgroundUrl from '@/assets/images/valorant-background.png?url'
@@ -125,7 +155,7 @@ const selectedGuildId = ref('')
 const authStore = useAuthStore()
 const guilds = ref<{ guildId: string; guildName: string }[]>([])
 const mitmStatus = ref<'connecting' | 'connected' | 'disconnected' | 'error'>()
-const serverStatus = ref<'online' | 'offline'>('offline')
+const serverStatus = ref<'Online' | 'Offline'>('Offline')
 
 let pingInterval: ReturnType<typeof setInterval> | null = null
 
@@ -160,21 +190,28 @@ const mitmStatusColor = computed(() => {
 })
 
 const isGuildListAvailable = computed(() => Array.isArray(guilds.value) && guilds.value.length > 0)
-const guildNameFromId = (id: string) => guilds.value.find((g) => g.guildId === id)?.guildName
+const guildNameFromId = computed(
+  () => guilds.value.find((g) => g.guildId === selectedGuildId.value)?.guildName
+)
 
-const handleStart = () => {
-  console.log('Start button clicked')
+const handleStart = async () => {
+  if (!authStore.userId || !selectedGuildId.value) return
+  const result = await window.electron.invoke('start-valorant', {
+    discordUserId: authStore.userId,
+    guildId: selectedGuildId.value,
+  })
 }
 
 const buttonRef = useTemplateRef<HTMLElement | null>('buttonRef')
+const dropdownRef = useTemplateRef<HTMLElement | null>('dropdownRef')
 const dropdownStyles = ref<Record<string, string>>({})
 
 function updateDropdownPosition() {
   nextTick(() => {
-    if (!buttonRef.value) return
+    if (!buttonRef.value || !dropdownRef.value) return
 
     const rect = buttonRef.value.getBoundingClientRect()
-    const dropdownHeight = 240 // px（Tailwindの max-h-60 = 15rem）
+    const dropdownHeight = dropdownRef.value.offsetHeight
     const spaceBelow = window.innerHeight - rect.bottom
     const spaceAbove = rect.top
 
@@ -203,12 +240,25 @@ function updateDropdownPosition() {
 async function pingServer() {
   try {
     const status = await window.electron.invoke('ping')
-    serverStatus.value = status ? 'online' : 'offline'
+    serverStatus.value = status ? 'Online' : 'Offline'
   } catch {
-    serverStatus.value = 'offline'
+    serverStatus.value = 'Offline'
   }
 }
 
+const voiceChannels = ref<{ id: string; name: string }[]>([])
+const selectedChannelId = ref('')
+
+watch(selectedGuildId, async (guildId) => {
+  if (!guildId) return
+  try {
+    const result = await window.electron.invoke('fetch-voice-channels', { guildId })
+    voiceChannels.value = result
+    selectedChannelId.value = result[0]?.id ?? ''
+  } catch (e) {
+    console.error('ボイスチャンネルの取得に失敗しました:', e)
+  }
+})
 onMounted(async () => {
   if (authStore.userId) {
     const result = await window.electron.invoke('fetch-guilds', { discordUserId: authStore.userId })
@@ -219,6 +269,9 @@ onMounted(async () => {
   window.electron?.on?.('mitm-status', (status) => {
     mitmStatus.value = status
   })
+
+  updateDropdownPosition()
+  pingServer()
 
   pingInterval = setInterval(pingServer, 5000)
 

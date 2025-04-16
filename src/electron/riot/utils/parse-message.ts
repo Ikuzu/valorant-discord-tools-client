@@ -6,7 +6,7 @@ interface parsedMessage {
   content: string
 }
 
-function parseMessage(raw: string): parsedMessage | null {
+export function parseMessage(raw: string): parsedMessage | null {
   const stampMatch = raw.match(/stamp=['"]([^'"]+)['"]/)
   const idMatch = raw.match(/id=['"]([^'"]+)['"]/)
   const fromMatch = raw.match(/from=['"]([^'"]+)['"]/)

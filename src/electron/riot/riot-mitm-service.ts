@@ -4,6 +4,7 @@ import { getRiotClientPath } from './utils/riot-client-utils.js'
 import { exec } from 'node:child_process'
 import axios from 'axios'
 import { BrowserWindow } from 'electron'
+import { parseMessage } from './utils/parse-message.js'
 
 export class RiotMitmService {
   private xmppMitm: XmppMITM | null
@@ -11,6 +12,7 @@ export class RiotMitmService {
   private httpPort = 35479
   private xmppPort = 35478
   private host = '127.0.0.1'
+  private startTime = new Date()
 
   constructor() {
     this.configMitm = new ConfigMITM(this.httpPort, this.host, this.xmppPort)
@@ -51,7 +53,12 @@ export class RiotMitmService {
       const parsedMessage = parseMessage(raw)
       if (!parsedMessage) {
         console.error('メッセージの変換に失敗しました。')
+        return
       }
+
+      const msgTime = new Date(parsedMessage.timestamp)
+      msgTime.setHours(msgTime.getHours() + 9)
+      if (msgTime < this.startTime) return
 
       const postData = {
         guildId,

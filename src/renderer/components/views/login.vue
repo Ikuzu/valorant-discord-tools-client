@@ -1,10 +1,8 @@
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm space-y-6">
-      <h1 class="text-xl font-bold text-center dark:text-gray-300">Discord 認証</h1>
+  <div class="space-y-6">
+    <h1 class="text-xl font-bold text-center text-gray-300">Discord 認証</h1>
 
-      <p class="text-center text-sm text-gray-700 dark:text-gray-300">{{ message }}</p>
-    </div>
+    <p class="text-center text-sm text-gray-300">{{ message }}</p>
   </div>
 </template>
 
@@ -20,6 +18,15 @@ const message = ref('認証を開始します...')
 onMounted(async () => {
   message.value = '認証中...'
 
+  window.electron.on('oauth-success', (data) => {
+    auth.setAuth(data)
+    router.push('/home')
+  })
+
+  window.electron.on('oauth-failed', () => {
+    message.value = '認証に失敗しました。'
+  })
+
   // Discord OAuth開始
   try {
     const result = await window.electron.invoke('start-discord-oauth')
@@ -31,14 +38,5 @@ onMounted(async () => {
   } catch {
     message.value = '認証に失敗しました。'
   }
-
-  window.electron.on('oauth-success', (data) => {
-    auth.setAuth(data)
-    router.push('/main')
-  })
-
-  window.electron.on('oauth-failed', () => {
-    message.value = '認証に失敗しました。'
-  })
 })
 </script>

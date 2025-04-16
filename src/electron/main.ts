@@ -140,6 +140,16 @@ ipcMain.handle('start-discord-oauth', async (_event) => {
   return { status: 'no-window' }
 })
 
+ipcMain.handle('fetch-voice-channels', async (_event, { guildId }) => {
+  try {
+    const res = await axios.get(`${process.env.API_BASE_URL}/voice-channels?guildId=${guildId}`)
+    return res.data // [{ id, name }]
+  } catch (e) {
+    console.error('Fetch voice channels failed:', e)
+    return []
+  }
+})
+
 ipcMain.handle('start-valorant', async (_event, { guildId, discordUserId }) => {
   console.log('start-valorant called with:', guildId, discordUserId)
 

@@ -13,6 +13,10 @@ type ElectronIpcInvoke = {
     data: { discordUserId: string }
     return: { guildId: string; guildName: string }[]
   }
+  'fetch-voice-channels': {
+    data: { guildId: string }
+    return: { id: string; name: string }[]
+  }
   ping: {
     data: {}
     return: boolean

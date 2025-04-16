@@ -52,7 +52,7 @@
                 :src="userAvatarUrl ?? 'https://picsum.photos/200/300'"
                 class="w-16 h-16 rounded-full"
               />
-              <span class="text-lg text-white">{{ auth.userId ?? 'unknown' }}</span>
+              <span class="text-lg text-white">{{ auth.userName ?? 'unknown' }}</span>
             </div>
 
             <!-- ログアウト -->

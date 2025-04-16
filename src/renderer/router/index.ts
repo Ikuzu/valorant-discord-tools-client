@@ -5,19 +5,18 @@ import Login from '@/components/views/login.vue'
 import Home from '@/components/views/home.vue'
 
 const routes = [
-  { path: '/', redirect: '/home' },
   {
-    path: '/l',
-    name: 'Login',
-    component: Login,
-  },
-  {
-    path: '/home',
+    path: '/',
     name: 'Home',
     component: Layout, // Layoutで包む
     children: [
       {
         path: '',
+        name: 'Login',
+        component: Login,
+      },
+      {
+        path: 'home',
         component: Home, // MainViewはLayout内に表示される
       },
     ],

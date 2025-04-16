@@ -4,7 +4,7 @@
     <AnimatedBackground />
 
     <!-- ヘッダー（固定） -->
-    <div class="fixed top-0 left-0 w-full z-20 h-16">
+    <div v-if="route.path !== '/'" class="fixed top-0 left-0 w-full z-20 h-16">
       <div class="relative z-10">
         <Header />
       </div>
@@ -12,7 +12,8 @@
 
     <!-- メインコンテンツ（スクロール可能） -->
     <main
-      class="h-full pt-[100px] z-10 overflow-y-auto px-4 flex items-center justify-center overflow-hidden"
+      class="h-full z-10 overflow-y-auto px-4 flex items-center justify-center overflow-hidden"
+      :class="{ 'pt-[100px]': route.path !== '/' }"
     >
       <div class="w-md max-h-full overflow-hidden flex justify-center px-4 text-white pb-5">
         <div
@@ -26,8 +27,11 @@
 </template>
 
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
 import AnimatedBackground from '../partials/common/animated-background.vue'
 import Header from './header.vue'
+
+const route = useRoute()
 </script>
 
 <style scoped>
