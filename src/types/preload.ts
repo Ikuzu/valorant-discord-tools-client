@@ -13,6 +13,10 @@ type ElectronIpcInvoke = {
     data: { discordUserId: string }
     return: { guildId: string; guildName: string }[]
   }
+  ping: {
+    data: {}
+    return: boolean
+  }
   'start-valorant': {
     data: { guildId: string; discordUserId: string }
     return: { status: 'started' | 'failed' }

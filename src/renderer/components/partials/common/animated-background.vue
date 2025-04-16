@@ -30,6 +30,9 @@ onMounted(() => {
     const size = Math.random() * 3 + 1
     el.style.width = `${size}px`
     el.style.height = `${size}px`
+    el.style.position = 'absolute'
+    el.style.background = 'white'
+    el.style.borderRadius = '50%'
     resetParticle(el)
     particlesContainer.value?.appendChild(el)
     animateParticle(el)
@@ -56,12 +59,57 @@ onMounted(() => {
       const moveY = pos.y - Math.random() * 30
       particle.style.left = `${moveX}%`
       particle.style.top = `${moveY}%`
-      particle.style.position = 'absolute'
-      particle.style.background = 'white'
 
       setTimeout(() => animateParticle(particle), duration * 1000)
     }, delay * 1000)
   }
+
+  // マウス移動時のパーティクル生成
+  document.addEventListener('mousemove', (e) => {
+    if (!particlesContainer.value) return
+
+    const mouseX = (e.clientX / window.innerWidth) * 100
+    const mouseY = (e.clientY / window.innerHeight) * 100
+
+    // 一時的なパーティクル生成
+    const particle = document.createElement('div')
+    particle.className = 'particle'
+
+    // ランダムサイズ
+    const size = Math.random() * 4 + 2
+    particle.style.width = `${size}px`
+    particle.style.height = `${size}px`
+    particle.style.position = 'absolute'
+    particle.style.left = `${mouseX}%`
+    particle.style.top = `${mouseY}%`
+    particle.style.opacity = '0.6'
+    particle.style.background = 'white'
+    particle.style.borderRadius = '50%'
+    particle.style.pointerEvents = 'none'
+
+    particlesContainer.value.appendChild(particle)
+
+    // 拡散アニメーション
+    setTimeout(() => {
+      particle.style.transition = 'all 2s ease-out'
+      particle.style.left = `${mouseX + (Math.random() * 10 - 5)}%`
+      particle.style.top = `${mouseY + (Math.random() * 10 - 5)}%`
+      particle.style.opacity = '0'
+    }, 10)
+
+    // 削除
+    setTimeout(() => {
+      particle.remove()
+    }, 2000)
+
+    // グラデーションスフィアをわずかに動かす
+    const spheres = document.querySelectorAll('.gradient-sphere')
+    const moveX = (e.clientX / window.innerWidth - 0.5) * 5
+    const moveY = (e.clientY / window.innerHeight - 0.5) * 5
+    spheres.forEach((sphere) => {
+      ;(sphere as HTMLElement).style.transform = `translate(${moveX}px, ${moveY}px)`
+    })
+  })
 })
 </script>
 
@@ -133,7 +181,7 @@ p {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: 0;
   overflow: hidden;
 }
 

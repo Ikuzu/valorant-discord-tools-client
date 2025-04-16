@@ -12,6 +12,7 @@ import { startDiscordOAuthWithPKCE } from './discord/oauth/pkce'
 import { RiotMitmService } from './riot/riot-mitm-service'
 import { exec } from 'child_process'
 import { setCodeVerifier, tryAutoLogin } from './discord/oauth/oauth-service'
+import axios from 'axios'
 
 // .env 読み込み
 const env = config({ path: path.join(__dirname, '.env') })
@@ -37,6 +38,8 @@ if (!gotLock) {
       webPreferences: {
         preload: path.join(__dirname, '../preload/preload.cjs'),
       },
+      minHeight: 400,
+      minWidth: 400,
     })
     win.setMenuBarVisibility(false)
 
@@ -60,6 +63,7 @@ if (!gotLock) {
 
 // サーバーURL（ギルド一覧取得用）
 const GUILD_API_URL = `${process.env.API_BASE_URL}/user-guild`
+const PING_API_URL = `${process.env.API_BASE_URL}/ping`
 
 // Riot/Valorant が起動しているかを tasklist で判定
 async function isRiotOrValorantRunning(): Promise<boolean> {
@@ -100,7 +104,6 @@ async function killRiotAndValorant() {
 // 例: DiscordユーザーIDや名前をフロント → メインに再送させる方式の場合
 ipcMain.handle('fetch-guilds', async (_event, { discordUserId }) => {
   try {
-    const axios = require('axios')
     const { data } = await axios.get(GUILD_API_URL, {
       params: { discordUserId },
     })
@@ -108,6 +111,16 @@ ipcMain.handle('fetch-guilds', async (_event, { discordUserId }) => {
   } catch (err) {
     console.error('fetch-guilds error:', err)
     return []
+  }
+})
+
+ipcMain.handle('ping', async () => {
+  try {
+    await axios.get(PING_API_URL)
+    return true
+  } catch (error) {
+    console.error('Ping failed:', error)
+    return false
   }
 })
 

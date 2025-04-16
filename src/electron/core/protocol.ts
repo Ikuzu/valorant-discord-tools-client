@@ -20,7 +20,7 @@ export function registerCustomProtocol() {
 }
 
 export function handleSecondInstance() {
-  app.on('second-instance', async (_event, argv) => {
+  app.on('second-instance', async (_event: Event, argv: string[]) => {
     if (!mainWindow) return
 
     const uri = argv.find((arg) => arg.startsWith(`${process.env.CUSTOM_URL_SCHEME}://`))
@@ -39,8 +39,4 @@ export function handleInitialProtocolLaunch() {
   const url = new URL(uri)
   const code = url.searchParams.get('code')
   if (!code) return
-
-  mainWindow.webContents.once('did-finish-load', () => {
-    mainWindow?.webContents.send('oauth-code', code)
-  })
 }

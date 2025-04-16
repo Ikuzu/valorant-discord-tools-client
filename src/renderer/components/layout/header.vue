@@ -1,67 +1,98 @@
 <template>
   <header
-    class="fixed top-6 left-1/2 transform -translate-x-1/2 z-30 w-[90%] max-w-6xl px-6 py-3 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-between shadow-lg"
+    class="fixed top-6 left-1/2 transform -translate-x-1/2 z-30 w-[90%] max-w-6xl px-6 py-3 rounded-full bg-white/5 backdrop-blur-sm flex items-center justify-between shadow-lg"
   >
     <!-- 左ロゴ＆リンク -->
-    <div class="flex items-center space-x-4 text-white">
-      <RouterLink to="/" class="flex items-center space-x-2 hover:opacity-80">
-        <HomeIcon class="h-6 w-6" />
-        <span class="text-lg font-semibold">MyApp</span>
+    <div class="flex-1 flex items-center space-x-4">
+      <div class="text-lg p-0 m-0">VDTCApp</div>
+    </div>
+
+    <div class="flex-1 flex justify-center space-x-4">
+      <RouterLink
+        to="/home"
+        :class="[
+          'text-sm px-3 py-1 rounded-full transition',
+          route.path === '/home'
+            ? 'bg-white/20 pointer-events-none text-white'
+            : 'hover:opacity-80 text-white/80',
+        ]"
+      >
+        Home
       </RouterLink>
-      <RouterLink to="/discord" class="text-sm hover:opacity-80"> DiscordBot設定 </RouterLink>
+
+      <RouterLink
+        to="/setting"
+        :class="[
+          'text-sm px-3 py-1 rounded-full transition',
+          route.path === '/setting'
+            ? 'bg-white/20 pointer-events-none text-white'
+            : 'hover:opacity-80 text-white/80',
+        ]"
+      >
+        Setting
+      </RouterLink>
     </div>
 
     <!-- 右メニュー -->
-    <Menu as="div" class="relative inline-block text-left">
-      <MenuButton class="text-white hover:opacity-80 focus:outline-none">
+    <div class="flex-1 flex justify-end">
+      <button @click="isDialogOpen = true" class="hover:opacity-80 focus:outline-none">
         <Bars3Icon class="h-6 w-6" />
-      </MenuButton>
+      </button>
+    </div>
 
-      <TransitionRoot
-        enter-active-class="transition duration-150 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-100 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <MenuItems
-          class="fixed inset-0 z-40 bg-black/60 backdrop-blur-lg flex flex-col justify-center items-center space-y-6 text-white"
-        >
-          <div class="flex flex-col items-center space-y-2">
-            <img :src="userAvatarUrl" class="w-16 h-16 rounded-full border border-white" />
-            <span class="text-lg">{{ auth.userName }}</span>
+    <!-- メニューダイアログ -->
+    <Teleport to="body">
+      <TransitionRoot :show="isDialogOpen" as="template">
+        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-lg" @click="isDialogOpen = false">
+          <!-- メニュー本体 -->
+          <div class="relative z-10 h-full flex flex-col justify-center items-center space-y-6">
+            <!-- ユーザー情報 -->
+            <div class="flex flex-col items-center space-y-2">
+              <img
+                :src="userAvatarUrl ?? 'https://picsum.photos/200/300'"
+                class="w-16 h-16 rounded-full"
+              />
+              <span class="text-lg text-white">{{ auth.userId ?? 'unknown' }}</span>
+            </div>
+
+            <!-- ログアウト -->
+            <button
+              @click="handleLogout"
+              class="relative inline-flex items-center justify-center p-0.5 mb-2 overflow-hidden text-sm font-medium rounded-lg group bg-gradient-to-r from-red-400 via-red-500 to-red-600 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 text-white focus:ring-4 focus:outline-none focus:ring-red-400"
+            >
+              <span
+                class="relative px-4 py-2.5 transition-all ease-in duration-75 bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
+              >
+                ログアウト
+              </span>
+            </button>
           </div>
-          <button
-            @click="handleLogout"
-            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-          >
-            ログアウト
-          </button>
-        </MenuItems>
+        </div>
       </TransitionRoot>
-    </Menu>
+    </Teleport>
   </header>
 </template>
 
 <script setup lang="ts">
-import { Menu, MenuButton, MenuItems } from '@headlessui/vue'
-import { HomeIcon, Bars3Icon } from '@heroicons/vue/20/solid'
+import { ref, computed } from 'vue'
+import { Bars3Icon } from '@heroicons/vue/20/solid'
 import { TransitionRoot } from '@headlessui/vue'
-import { computed } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
-import { RouterLink } from 'vue-router'
 
+const isDialogOpen = ref(false)
 const auth = useAuthStore()
+const route = useRoute()
 
 const userAvatarUrl = computed(() =>
   auth.userId && auth.userAvatar
     ? `https://cdn.discordapp.com/avatars/${auth.userId}/${auth.userAvatar}.png`
-    : ''
+    : 'https://cdn.discordapp.com/embed/avatars/4.png'
 )
 
 const handleLogout = () => {
   window.electron.invoke('logout')
   auth.resetAuth()
+  isDialogOpen.value = false
 }
 </script>

@@ -2,22 +2,23 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 
 import Layout from '@/components/layout/layout.vue'
 import Login from '@/components/views/login.vue'
-import Main from '@/components/views/home.vue'
+import Home from '@/components/views/home.vue'
 
 const routes = [
+  { path: '/', redirect: '/home' },
   {
     path: '/l',
     name: 'Login',
     component: Login,
   },
   {
-    path: '/',
-    name: 'Main',
+    path: '/home',
+    name: 'Home',
     component: Layout, // Layoutで包む
     children: [
       {
         path: '',
-        component: Main, // MainViewはLayout内に表示される
+        component: Home, // MainViewはLayout内に表示される
       },
     ],
   },
