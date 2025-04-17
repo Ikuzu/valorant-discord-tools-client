@@ -1,6 +1,6 @@
-import { BrowserWindow } from 'electron'
 import { exchangeCodeForToken, fetchDiscordUser } from './pkce'
 import { loadTokens, refreshAccessToken, saveTokens } from '../token-manager'
+import { MainWindow } from '../../core/main-window'
 
 let codeVerifier: string | null = null
 
@@ -8,7 +8,7 @@ export function setCodeVerifier(verifier: string) {
   codeVerifier = verifier
 }
 
-export async function oauthHandler(uri: string, window: BrowserWindow) {
+export async function oauthHandler(uri: string) {
   const url = new URL(uri)
   const code = url.searchParams.get('code')
   if (!code) return
@@ -29,25 +29,25 @@ export async function oauthHandler(uri: string, window: BrowserWindow) {
       expiresAt,
     })
 
-    window.webContents.send('oauth-success', {
+    MainWindow.send('oauth-success', {
       userId: user.id,
       userName: user.username,
       userAvatar: user.avatar,
     })
   } catch (err) {
     console.error('[OAuth Error]', err)
-    window.webContents.send('oauth-failed')
+    MainWindow.send('oauth-failed')
   }
 }
 
-export async function tryAutoLogin(window: BrowserWindow): Promise<boolean> {
+export async function tryAutoLogin(): Promise<boolean> {
   const tokens = await loadTokens()
   if (!tokens) return false
 
   if (tokens.expiresAt > Date.now()) {
     // accessTokenまだ有効
     const user = await fetchDiscordUser(tokens.accessToken)
-    window.webContents.send('oauth-success', {
+    MainWindow.send('oauth-success', {
       userId: user.id,
       userName: user.username,
       userAvatar: user.avatar,
@@ -64,7 +64,7 @@ export async function tryAutoLogin(window: BrowserWindow): Promise<boolean> {
     })
 
     const user = await fetchDiscordUser(accessToken)
-    window.webContents.send('oauth-success', {
+    MainWindow.send('oauth-success', {
       userId: user.id,
       userName: user.username,
       userAvatar: user.avatar,

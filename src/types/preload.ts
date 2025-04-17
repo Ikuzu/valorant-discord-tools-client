@@ -9,21 +9,21 @@ type ElectronIpcInvoke = {
     data: {}
     return: { status: 'auto-login' | 'browser-oauth' | 'no-window' }
   }
-  'fetch-guilds': {
-    data: { discordUserId: string }
-    return: { guildId: string; guildName: string }[]
-  }
-  'fetch-voice-channels': {
-    data: { guildId: string }
-    return: { id: string; name: string }[]
-  }
-  ping: {
-    data: {}
-    return: boolean
-  }
   'start-valorant': {
     data: { guildId: string; discordUserId: string }
-    return: { status: 'started' | 'failed' }
+    return: boolean
+  }
+  'update-settings': {
+    data: AppSettings
+    return: void
+  }
+  'get-settings': {
+    data: {}
+    return: AppSettings
+  }
+  logout: {
+    data: {}
+    return: void
   }
 }
 

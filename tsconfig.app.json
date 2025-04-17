@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "moduleResolution": "node",
+    "module": "esnext",
+    "target": "es2020",
     "jsx": "preserve",
 
     /* Linting */

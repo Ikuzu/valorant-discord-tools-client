@@ -19,7 +19,7 @@
         </div>
         <div class="relative inline-block group">
           <button
-            :disabled="!selectedGuildId"
+            :disabled="!selectedGuildId || !selectedChannelId"
             @click="handleStart"
             :class="[
               'rounded-full p-4 shadow-lg transition-all duration-200 ease-out text-white',
@@ -33,10 +33,10 @@
 
           <!-- ツールチップ（ギルド未選択時のみ表示） -->
           <div
-            v-if="!selectedGuildId"
+            v-if="!selectedGuildId || !selectedChannelId"
             class="absolute transform border border-white w-max right-0 mb-2 bg-black/30 text-white text-xs px-3 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
           >
-            ギルドを選択してください
+            {{ !selectedGuildId ? 'ギルドを選択してください' : 'チャンネルを選択してください' }}
           </div>
         </div>
       </div>
@@ -59,103 +59,47 @@
         </div>
       </div>
 
-      <!-- Guild選択 -->
-      <label class="block text-sm text-gray-400 mb-1">サーバー</label>
-      <Listbox v-model="selectedGuildId" v-slot="{ open }" :disabled="!isGuildListAvailable">
-        <div class="relative" ref="buttonRef">
-          <ListboxButton
-            :disabled="!isGuildListAvailable"
-            :class="[
-              'w-full px-4 py-2 text-left rounded-md border',
-              'text-white',
-              !isGuildListAvailable
-                ? 'bg-white/5 border-white/10 opacity-40 cursor-not-allowed'
-                : 'bg-white/10 border-white/20 hover:bg-white/20',
-            ]"
-          >
-            {{
-              guildNameFromId ??
-              (isGuildListAvailable
-                ? 'サーバーを選択してください。'
-                : '有効なサーバーがありません。')
-            }}
-          </ListboxButton>
+      <div class="space-y-4">
+        <!-- Guild選択 -->
+        <SelectListbox
+          v-model:selected-value="selectedGuildId"
+          :options="guilds.map((g) => ({ value: g.guildId, label: g.guildName }))"
+          label="サーバー"
+          placeholder="サーバーを選択してください"
+          noOptionsText="有効なサーバーがありません"
+        />
 
-          <Teleport to="body">
-            <div :style="dropdownStyles" class="fixed z-[1000]">
-              <Transition
-                @enter="updateDropdownPosition"
-                enter-active-class="transition duration-100 ease-out"
-                enter-from-class="transform scale-95 opacity-0"
-                enter-to-class="transform scale-100 opacity-100"
-                leave-active-class="transition duration-75 ease-in"
-                leave-from-class="transform scale-100 opacity-100"
-                leave-to-class="transform scale-95 opacity-0"
-              >
-                <div ref="dropdownRef">
-                  <ListboxOptions
-                    v-if="open && isGuildListAvailable"
-                    class="max-h-60 w-full overflow-auto bg-white/10 text-white border border-white/20 rounded-md shadow-lg backdrop-blur-md"
-                  >
-                    <ListboxOption
-                      v-for="g in guilds"
-                      :key="g.guildId"
-                      :value="g.guildId"
-                      class="cursor-pointer px-4 py-2 hover:bg-white/20"
-                    >
-                      {{ g.guildName }}
-                    </ListboxOption>
-                  </ListboxOptions>
-                </div>
-              </Transition>
-            </div>
-          </Teleport>
-        </div>
-      </Listbox>
-
-      <div v-if="voiceChannels.length > 0" class="mt-4">
-        <label class="block text-sm text-gray-400 mb-1">ボイスチャンネル</label>
-        <Listbox v-model="selectedChannelId">
-          <div class="relative">
-            <ListboxButton
-              class="w-full px-4 py-2 text-left rounded-md border bg-white/10 border-white/20 text-white"
-            >
-              {{
-                voiceChannels.find((c) => c.id === selectedChannelId)?.name || 'チャンネルを選択'
-              }}
-            </ListboxButton>
-            <ListboxOptions
-              class="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white/10 text-white border border-white/20 shadow-lg backdrop-blur-md z-50"
-            >
-              <ListboxOption
-                v-for="channel in voiceChannels"
-                :key="channel.id"
-                :value="channel.id"
-                class="cursor-pointer px-4 py-2 hover:bg-white/20"
-              >
-                {{ channel.name }}
-              </ListboxOption>
-            </ListboxOptions>
-          </div>
-        </Listbox>
+        <SelectListbox
+          v-model:selected-value="selectedChannelId"
+          :options="voiceChannels.map((v) => ({ value: v.id, label: v.name }))"
+          label="ボイスチャンネル"
+          placeholder="チャンネルを選択してください"
+          :noOptionsText="selectedGuildId ? '有効なチャンネルがありません' : 'サーバー未選択'"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, useTemplateRef, onBeforeUnmount, watch } from 'vue'
-import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { PlayIcon } from '@heroicons/vue/20/solid'
 import valorantBackgroundUrl from '@/assets/images/valorant-background.png?url'
 import discordBackgroundUrl from '@/assets/images/discord-logo.svg?url'
 import { useAuthStore } from '@/store/auth'
+import SelectListbox from '../partials/common/select-listbox.vue'
+import { getVoiceChannels } from '@/client/api/voice-channels'
+import { Guild, VoiceChannel } from '@/typs/domain'
+import { getGuilds } from '@/client/api/guilds'
+import { ping } from '@/client/api/ping'
 
 const selectedGuildId = ref('')
 const authStore = useAuthStore()
-const guilds = ref<{ guildId: string; guildName: string }[]>([])
+const guilds = ref<Guild[]>([])
 const mitmStatus = ref<'connecting' | 'connected' | 'disconnected' | 'error'>()
 const serverStatus = ref<'Online' | 'Offline'>('Offline')
+const voiceChannels = ref<VoiceChannel[]>([])
+const selectedChannelId = ref('')
 
 let pingInterval: ReturnType<typeof setInterval> | null = null
 
@@ -189,79 +133,20 @@ const mitmStatusColor = computed(() => {
   }
 })
 
-const isGuildListAvailable = computed(() => Array.isArray(guilds.value) && guilds.value.length > 0)
-const guildNameFromId = computed(
-  () => guilds.value.find((g) => g.guildId === selectedGuildId.value)?.guildName
-)
-
-const handleStart = async () => {
-  if (!authStore.userId || !selectedGuildId.value) return
-  const result = await window.electron.invoke('start-valorant', {
-    discordUserId: authStore.userId,
-    guildId: selectedGuildId.value,
-  })
-}
-
-const buttonRef = useTemplateRef<HTMLElement | null>('buttonRef')
-const dropdownRef = useTemplateRef<HTMLElement | null>('dropdownRef')
-const dropdownStyles = ref<Record<string, string>>({})
-
-function updateDropdownPosition() {
-  nextTick(() => {
-    if (!buttonRef.value || !dropdownRef.value) return
-
-    const rect = buttonRef.value.getBoundingClientRect()
-    const dropdownHeight = dropdownRef.value.offsetHeight
-    const spaceBelow = window.innerHeight - rect.bottom
-    const spaceAbove = rect.top
-
-    let top = 0
-    let transformOrigin = 'top'
-
-    if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
-      // 下方向に表示
-      top = rect.bottom + window.scrollY
-      transformOrigin = 'top'
-    } else {
-      // 上方向に表示
-      top = rect.top + window.scrollY - dropdownHeight
-      transformOrigin = 'bottom'
-    }
-
-    dropdownStyles.value = {
-      top: `${top}px`,
-      left: `${rect.left + window.scrollX}px`,
-      width: `${rect.width}px`,
-      'transform-origin': transformOrigin,
-    }
-  })
-}
-
-async function pingServer() {
-  try {
-    const status = await window.electron.invoke('ping')
-    serverStatus.value = status ? 'Online' : 'Offline'
-  } catch {
-    serverStatus.value = 'Offline'
-  }
-}
-
-const voiceChannels = ref<{ id: string; name: string }[]>([])
-const selectedChannelId = ref('')
-
 watch(selectedGuildId, async (guildId) => {
   if (!guildId) return
   try {
-    const result = await window.electron.invoke('fetch-voice-channels', { guildId })
+    const result = await getVoiceChannels(guildId)
     voiceChannels.value = result
     selectedChannelId.value = result[0]?.id ?? ''
   } catch (e) {
     console.error('ボイスチャンネルの取得に失敗しました:', e)
   }
 })
+
 onMounted(async () => {
   if (authStore.userId) {
-    const result = await window.electron.invoke('fetch-guilds', { discordUserId: authStore.userId })
+    const result = await getGuilds(authStore.userId)
     guilds.value = result
   }
 
@@ -270,19 +155,34 @@ onMounted(async () => {
     mitmStatus.value = status
   })
 
-  updateDropdownPosition()
   pingServer()
-
   pingInterval = setInterval(pingServer, 5000)
-
-  window.addEventListener('scroll', updateDropdownPosition, true)
-  window.addEventListener('resize', updateDropdownPosition)
 })
 
 onBeforeUnmount(() => {
   if (pingInterval) clearInterval(pingInterval)
-
-  window.removeEventListener('scroll', updateDropdownPosition, true)
-  window.removeEventListener('resize', updateDropdownPosition)
 })
+
+async function handleStart() {
+  if (!authStore.userId || !selectedGuildId.value) return
+  const result = await window.electron.invoke('start-valorant', {
+    discordUserId: authStore.userId,
+    guildId: selectedGuildId.value,
+  })
+
+  if (result) {
+    console.log('valorant の起動に成功しました。')
+  } else {
+    console.error('valorant の起動に失敗しました。')
+  }
+}
+
+async function pingServer() {
+  try {
+    const status = await ping()
+    serverStatus.value = status ? 'Online' : 'Offline'
+  } catch {
+    serverStatus.value = 'Offline'
+  }
+}
 </script>

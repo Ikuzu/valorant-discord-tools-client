@@ -3,12 +3,13 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import Layout from '@/components/layout/layout.vue'
 import Login from '@/components/views/login.vue'
 import Home from '@/components/views/home.vue'
+import Setting from '@/components/views/setting.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: Layout, // Layoutで包む
+    component: Layout,
     children: [
       {
         path: '',
@@ -17,7 +18,11 @@ const routes = [
       },
       {
         path: 'home',
-        component: Home, // MainViewはLayout内に表示される
+        component: Home,
+      },
+      {
+        path: 'setting',
+        component: Setting,
       },
     ],
   },
