@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { app, session } from 'electron'
 import path from 'path'
 import { config } from 'dotenv'
 import { expand } from 'dotenv-expand'

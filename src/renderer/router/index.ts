@@ -8,7 +8,7 @@ import Setting from '@/components/views/setting.vue'
 const routes = [
   {
     path: '/',
-    name: 'Home',
+    name: 'Main',
     component: Layout,
     children: [
       {

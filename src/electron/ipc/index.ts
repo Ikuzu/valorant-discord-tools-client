@@ -1,4 +1,5 @@
 export async function handleIpcHandlers() {
-  await import('./handlers/start-discord-oauth')
-  await import('./handlers/start-valorant')
+  import('./handlers/start-discord-oauth')
+  import('./handlers/start-valorant')
+  import('./handlers/settings')
 }
